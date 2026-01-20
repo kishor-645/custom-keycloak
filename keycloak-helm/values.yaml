@@ -1,0 +1,62 @@
+replicaCount: 1  # High Availability
+
+image:
+  repository: quay.io/keycloak/keycloak
+  tag: 26.0.2
+
+# image:
+#   repository: key1
+#   tag: 1
+
+# 1. Secret Management (Set these during helm install)
+auth:
+  adminUser: admin
+  adminPassword: "ChangeMe"
+  dbPassword: "DbSecretPass"
+
+# 2. Database (Postgres)
+db:
+  image: postgres:15
+  name: keycloak_db
+  user: keycloak_user
+  storageClass: "standard"
+  storageSize: 10Gi
+
+# 3. Resource Limits (Production Specs)
+resources:
+  requests:
+    cpu: 500m
+    memory: 1024Mi
+  limits:
+    cpu: 1000m
+    memory: 2048Mi
+
+# 4. Ingress & TLS (The "Button")
+ingress:
+  enabled: false # Set to true to enable
+  hostname: keycloak.example.com
+  tls: true
+  className: nginx
+
+# 6. Service Configuration
+service:
+  type: ClusterIP  # Can be: ClusterIP, LoadBalancer, NodePort
+  port: 8080
+  targetPort: 8080
+
+# 5. HA Caching
+cache:
+  stack: kubernetes
+
+# Realm Import Capability
+realmImport:
+  enabled: false  # Set to true when you want to use it
+  content: |
+    {
+      "realm": "jhipster",
+      "enabled": true,
+      "users": [],
+      "roles": {
+        "realm": []
+      }
+    }

@@ -1,0 +1,8 @@
+{
+  "realm": "retc",
+  "enabled": true,
+  "displayName": "Retc",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false
+}

@@ -1,0 +1,125 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ .Release.Name }}
+spec:
+  serviceName: {{ .Release.Name }}-headless
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: keycloak
+  template:
+    metadata:
+      labels:
+        app: keycloak
+    spec:
+      containers:
+      - name: keycloak
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        # Removed --optimized to allow auto-configuration at startup
+        args: ["start", "--import-realm"]
+        env:
+        - name: KC_HEALTH_ENABLED
+          value: "true"
+        # UPDATED: Using new non-deprecated variables for Keycloak 26
+        - name: KC_BOOTSTRAP_ADMIN_USERNAME
+          value: {{ .Values.auth.adminUser }}
+        - name: KC_BOOTSTRAP_ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Release.Name }}-secrets
+              key: admin-password
+        # Database Settings
+        - name: KC_DB
+          value: postgres
+        - name: KC_DB_URL
+          value: "jdbc:postgresql://{{ .Release.Name }}-db:5432/{{ .Values.db.name }}"
+        - name: KC_DB_USERNAME
+          value: {{ .Values.db.user }}
+        - name: KC_DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Release.Name }}-secrets
+              key: db-password
+        
+        # --- HIGH AVAILABILITY / CLUSTERING FIX ---
+        - name: KC_CACHE_STACK
+          value: kubernetes
+        # This is the official Keycloak variable
+        - name: KC_CACHE_STACK_KUBERNETES_DNS_QUERY
+          value: "{{ .Release.Name }}-headless.{{ .Release.Namespace }}.svc.cluster.local"
+        # This is the "Force Fix" - directly injecting the property into the Java process
+        - name: JAVA_OPTS_APPEND
+          value: "-Djgroups.dns.query={{ .Release.Name }}-headless.{{ .Release.Namespace }}.svc.cluster.local"
+        
+        # --- NETWORKING ---
+        - name: KC_PROXY_HEADERS
+          value: xforwarded
+        - name: KC_HOSTNAME_STRICT
+          value: "false"
+        - name: KC_HTTP_ENABLED
+          value: "true"
+        
+        ports:
+        - containerPort: 8080
+          name: http
+        - containerPort: 9000
+          name: management # Added management port
+        - containerPort: 7800
+          name: jgroups
+        
+        volumeMounts:
+        {{- if .Values.realmImport.enabled }}
+        - name: realm-import-vol
+          mountPath: /opt/keycloak/data/import/realm.json
+          subPath: import-file.json
+          readOnly: true
+        {{- end }}
+        
+        # Resource Limits
+        resources:
+        # Health Checks (Probes now point to the Management Port 9000)
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: 9000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /health/live
+            port: 9000
+          initialDelaySeconds: 50
+          periodSeconds: 20
+      
+      volumes:
+      {{- if .Values.realmImport.enabled }}
+      - name: realm-import-vol
+        configMap:
+          name: {{ .Release.Name }}-realm-import
+      {{- end }}
+---
+# Headless service for HA discovery
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-headless
+spec:
+  clusterIP: None
+  selector:
+    app: keycloak
+  ports:
+  - port: 8080
+    name: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}
+spec:
+  type: {{ .Values.service.type }}
+  selector:
+    app: keycloak
+  ports:
+  - port: {{ .Values.service.port }}
+    targetPort: {{ .Values.service.targetPort }}
