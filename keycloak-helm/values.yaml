@@ -21,8 +21,7 @@ db:
   user: keycloak_user
   storageClass: "standard"
   storageSize: 10Gi
-
-# 3. Resource Limits (Production Specs)
+  replicas: 2  # Number of database replicas (stateful set)
 resources:
   requests:
     cpu: 500m
@@ -67,7 +66,3 @@ realmImport:
 # Look for kubernetes.io/hostname label value
 nodeSelector:
   kubernetes.io/hostname: "srvk8sworker1"  # Change this to your desired worker node hostname
-
-# 8. Database Replica Count
-db:
-  replicas: 1  # Number of database replicas (stateful set)
