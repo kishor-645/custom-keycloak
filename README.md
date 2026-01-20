@@ -18,11 +18,13 @@ This Helm chart deploys a fully independent, production-ready **Keycloak 26** cl
 
 | Parameter | Description | Default |
 | :--- | :--- | :--- |
-| `replicaCount` | Number of Keycloak nodes (use `2+` for HA) | `2` |
+| `replicaCount` | Number of Keycloak nodes (use `2+` for HA) | `1` |
 | `auth.adminUser` | Initial Admin Username | `admin` |
 | `auth.adminPassword` | Initial Admin Password | `admin_password` |
+| `db.replicas` | Number of Database replicas (StatefulSet) | `2` |
 | `db.storageClass` | Storage class for Postgres Persistence | `standard` |
 | `db.storageSize` | Disk size for Database | `10Gi` |
+| `nodeSelector."kubernetes.io/hostname"` | Worker node hostname to deploy pods | `srvk8sworker1` |
 | `resources.limits.memory` | Maximum RAM allowed for Keycloak pod | `2048Mi` |
 | `ingress.enabled` | Toggle to create Ingress rules | `false` |
 | `realmImport.enabled` | Toggle to import a JSON realm file | `false` |
@@ -71,15 +73,52 @@ helm upgrade --install keycloak ./keycloak-helm  --create-namespace \
   --set-file realmImport.content=jhipster-realm.json
 ```
 ```bash
-helm upgrade --install keycloak ./keycloak-helm --namespace dev --set realmImport.enabled=true --set-file realmImport.content=realm-import/realm-retc.json.json
+helm upgrade --install keycloak ./keycloak-helm --namespace dev --set realmImport.enabled=true --set-file realmImport.content=realm-import/realm-retc.json
 ```
 
+### 5. Installation with Custom Worker Node (Node Affinity)
+Force Keycloak and Database pods to deploy on a specific worker node. This is useful for on-prem deployments where storage is node-local or when you want to isolate workloads.
+
+**First, find your available nodes:**
 ```bash
-helm upgrade --install keycloak ./keycloak-helm --namespace dev --set realmImport.enabled=true --set-file realmImport.content=realm-import/realm-retc.json.json --set service.type=LoadBalancer
+kubectl get nodes --show-labels
 ```
 
+Look for the `kubernetes.io/hostname` label. Example output:
+```
+srvk8sworker1   Ready    worker   45d   v1.27.0   kubernetes.io/hostname=srvk8sworker1
+srvk8sworker2   Ready    worker   45d   v1.27.0   kubernetes.io/hostname=srvk8sworker2
+```
+
+**Then deploy to a specific worker:**
 ```bash
-helm upgrade --install keycloak ./keycloak-helm --namespace dev --set realmImport.enabled=true --set-file realmImport.content=realm-import/realm-retc.json.json --set service.type=NodePort
+helm upgrade --install keycloak ./keycloak-helm \
+  --namespace dev \
+  --create-namespace \
+  --set "nodeSelector.kubernetes\.io/hostname=srvk8sworker1"
+```
+
+### 6. Installation with Custom Database Replicas
+Control the number of database replicas for your Postgres StatefulSet.
+
+```bash
+helm upgrade --install keycloak ./keycloak-helm \
+  --namespace dev \
+  --create-namespace \
+  --set db.replicas=3
+```
+
+### 7. Combined Example: Custom Node + Custom DB Replicas + Realm Import
+```bash
+helm upgrade --install keycloak ./keycloak-helm \
+  --namespace dev \
+  --create-namespace \
+  --set "nodeSelector.kubernetes\.io/hostname=srvk8sworker1" \
+  --set db.replicas=3 \
+  --set replicaCount=2 \
+  --set realmImport.enabled=true \
+  --set-file realmImport.content=realm-import/realm-retc.json \
+  --set service.type=LoadBalancer
 ```
 ---
 
@@ -90,6 +129,20 @@ helm upgrade --install keycloak ./keycloak-helm --namespace dev --set realmImpor
 kubectl get pods -n dev
 ```
 
+### Check if pods are deployed to the correct worker node
+When using `nodeSelector`, verify that both Keycloak and Database pods are running on the specified node:
+```bash
+kubectl get pods -o wide -n dev
+```
+Look at the **NODE** column. All pods should show the same worker node hostname (e.g., `srvk8sworker1`).
+
+### Verify database replica count
+```bash
+kubectl get statefulsets -n dev
+kubectl describe statefulset keycloak-db -n dev
+```
+Check the `Replicas` field to confirm it matches your configuration.
+
 ### Watch Keycloak startup logs
 ```bash
 kubectl logs -f pod/keycloak-0 -n dev
@@ -99,6 +152,12 @@ kubectl logs -f pod/keycloak-0 -n dev
 If you are not using Ingress, you can access the UI by running:
 ```bash
 kubectl port-forward svc/keycloak 8080:8080 -n dev
+*   **Node Selector:** When using `nodeSelector`, ensure the specified worker node exists and is ready. Use `kubectl get nodes` to verify. If the node goes down, all pods will become unschedulable.
+*   **Database Replicas on Single Node:** If you set `db.replicas=2` or higher with a single `nodeSelector`, all database replicas will run on the same worker node. This loses "Node High Availability" but gains stability for on-prem environments where storage is node-local.
+*   **Finding Node Hostnames:** To get the exact hostname to use in `nodeSelector`, run:
+    ```bash
+    kubectl get nodes --show-labels | grep kubernetes.io/hostname
+    ```
 ```
 Then visit: **`http://localhost:8080`**
 

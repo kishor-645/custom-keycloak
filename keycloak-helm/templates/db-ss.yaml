@@ -4,7 +4,7 @@ metadata:
   name: {{ .Release.Name }}-db
 spec:
   serviceName: {{ .Release.Name }}-db
-  replicas: 2
+  replicas: {{ .Values.db.replicas }}
   selector:
     matchLabels:
       app: keycloak-db
@@ -13,6 +13,10 @@ spec:
       labels:
         app: keycloak-db
     spec:
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       containers:
       - name: postgres
         image: {{ .Values.db.image }}
