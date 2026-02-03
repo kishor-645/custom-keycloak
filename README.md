@@ -2,7 +2,7 @@
 
 This Helm chart deploys a fully independent, production-ready **Keycloak 26** cluster on Kubernetes. It is built to be vendor-neutral, highly available, and secure.
 
-## 🚀 Features
+##  Features
 
 *   **Keycloak 26 (Quarkus):** Optimized for the latest version of Keycloak.
 *   **High Availability:** Ready for multi-replica deployment with Infinispan clustering (DNS discovery).
@@ -14,7 +14,7 @@ This Helm chart deploys a fully independent, production-ready **Keycloak 26** cl
 
 ---
 
-## 🛠 Configuration Parameters
+## Configuration Parameters
 
 | Parameter | Description | Default |
 | :--- | :--- | :--- |
@@ -31,7 +31,7 @@ This Helm chart deploys a fully independent, production-ready **Keycloak 26** cl
 
 ---
 
-## 📦 Installation Guide
+##  Installation Guide
 
 ### 1. Basic Installation (For Local/Dev)
 Use this for a quick setup in a **Kind** or **Minikube** cluster.
@@ -76,7 +76,31 @@ helm upgrade --install keycloak ./keycloak-helm  --create-namespace \
 helm upgrade --install keycloak ./keycloak-helm --namespace dev --set realmImport.enabled=true --set-file realmImport.content=realm-import/realm-retc.json
 ```
 
-### 5. Installation with Custom Worker Node (Node Affinity)
+### 5. Installation Using the `deploy-keykloak.sh` Script
+This repo includes a simple deploy script that wraps the recommended Helm command from this README.
+
+**Usage:**
+```bash
+./deploy-keykloak.sh <namespace>
+```
+
+**Example:**
+```bash
+./deploy-keykloak.sh klk
+```
+
+**What the script does:**
+- Uses the local chart at `./keycloak-helm`
+- Enables realm import with `realm-import/realm-retc.json`
+- Sets `replicaCount=1`
+- Sets `db.storageClass="longhorn"`
+- Exposes service as `LoadBalancer` on port `8080`
+
+**Requirements:**
+- The chart directory `keycloak-helm` must exist
+- The realm file `realm-import/realm-retc.json` must exist
+
+### 6. Installation with Custom Worker Node (Node Affinity)
 Force Keycloak and Database pods to deploy on a specific worker node. This is useful for on-prem deployments where storage is node-local or when you want to isolate workloads.
 
 **First, find your available nodes:**
@@ -98,7 +122,7 @@ helm upgrade --install keycloak ./keycloak-helm \
   --set "nodeSelector.kubernetes\.io/hostname=srvk8sworker1"
 ```
 
-### 6. Installation with Custom Database Replicas
+### 7. Installation with Custom Database Replicas
 Control the number of database replicas for your Postgres StatefulSet.
 
 ```bash
@@ -108,7 +132,7 @@ helm upgrade --install keycloak ./keycloak-helm \
   --set db.replicas=3
 ```
 
-### 7. Combined Example: Custom Node + Custom DB Replicas + Realm Import
+### 8. Combined Example: Custom Node + Custom DB Replicas + Realm Import
 ```bash
 helm upgrade --install keycloak ./keycloak-helm \
   --namespace dev \
@@ -122,7 +146,7 @@ helm upgrade --install keycloak ./keycloak-helm \
 ```
 ---
 
-## 🔍 Verification & Troubleshooting
+##  Verification & Troubleshooting
 
 ### Check if pods are running
 ```bash
@@ -168,7 +192,7 @@ This confirms the pods have found each other and are sharing sessions.
 
 ---
 
-## ⚠️ Important Notes
+## Important Notes
 *   **Storage Class:** Ensure the `db.storageClass` matches a class available in your cluster (`kubectl get sc`).
 *   **Admin Credentials:** Keycloak only creates the admin user on the **very first boot**. If you change the password in `values.yaml` later, it will not change the password of an existing database.
 *   **Resources:** Keycloak 26 (Quarkus) requires at least 1GB of RAM to start comfortably. Do not set limits lower than `1024Mi`.

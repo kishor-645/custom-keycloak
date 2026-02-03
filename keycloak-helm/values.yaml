@@ -11,7 +11,7 @@ image:
 # 1. Secret Management (Set these during helm install)
 auth:
   adminUser: admin
-  adminPassword: "ChangeMe"
+  adminPassword: "E1SqKDb170AB"
   dbPassword: "DbSecretPass"
 
 # 2. Database (Postgres)
@@ -21,7 +21,7 @@ db:
   user: keycloak_user
   storageClass: "standard"
   storageSize: 10Gi
-  replicas: 2  # Number of database replicas (stateful set)
+  replicas: 1  # Number of database replicas (stateful set)
 resources:
   requests:
     cpu: 500m
