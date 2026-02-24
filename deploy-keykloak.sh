@@ -51,6 +51,10 @@ helm upgrade --install "$RELEASE_NAME" "$CHART_PATH" \
   --set auth.adminPassword="$KC_ADMIN_PASSWORD" \
   --set db.user="$DB_USER" \
   --set auth.dbPassword="$DB_PASSWORD" \
+  --set ingress.enabled=true \
+  --set ingress.className="nginx" \
+  --set ingress.hostname="keycloak-stackforge.ics-global.in" \
+  --set ingress.tls=true \
   --set-file realmImport.content="$REALM_FILE" \
   --set service.type=LoadBalancer \
   --set service.port=8080
@@ -68,6 +72,6 @@ fi
 
 echo ""
 echo "✅ Keycloak deployed in namespace '$NAMESPACE'"
-echo "🔗 Access → kubectl port-forward -n $NAMESPACE svc/keycloak 8080:8080"
-echo "   Then visit → http://localhost:8080"
+echo "🔗 Access → https://keycloak-stackforge.ics-global.in"
+echo "   Admin → username: $KC_ADMIN_USER"
 echo ""

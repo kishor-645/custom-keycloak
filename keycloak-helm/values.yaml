@@ -32,8 +32,8 @@ resources:
 
 # 4. Ingress & TLS (The "Button")
 ingress:
-  enabled: false # Set to true to enable
-  hostname: keycloak.example.com
+  enabled: true # Set to true to enable
+  hostname: keycloak-stackforge.ics-global.in
   tls: true
   className: nginx
 
