@@ -59,10 +59,3 @@ realmImport:
         "realm": []
       }
     }
-
-# 7. Node Selector - Force pods to deploy on a specific worker node
-# Set the hostname of the worker where you want pods to run
-# To find available nodes, run: kubectl get nodes --show-labels
-# Look for kubernetes.io/hostname label value
-nodeSelector:
-  kubernetes.io/hostname: "srvk8sworker1"  # Change this to your desired worker node hostname

@@ -13,10 +13,6 @@ spec:
       labels:
         app: keycloak
     spec:
-      {{- with .Values.nodeSelector }}
-      nodeSelector:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
       containers:
       - name: keycloak
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"

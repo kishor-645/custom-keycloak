@@ -24,7 +24,6 @@ This Helm chart deploys a fully independent, production-ready **Keycloak 26** cl
 | `db.replicas` | Number of Database replicas (StatefulSet) | `2` |
 | `db.storageClass` | Storage class for Postgres Persistence | `standard` |
 | `db.storageSize` | Disk size for Database | `10Gi` |
-| `nodeSelector."kubernetes.io/hostname"` | Worker node hostname to deploy pods | `srvk8sworker1` |
 | `resources.limits.memory` | Maximum RAM allowed for Keycloak pod | `2048Mi` |
 | `ingress.enabled` | Toggle to create Ingress rules | `false` |
 | `realmImport.enabled` | Toggle to import a JSON realm file | `false` |
